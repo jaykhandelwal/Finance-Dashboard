@@ -1,0 +1,5 @@
+{
+  "name": "FinUnify AI",
+  "description": "A unified AI-powered dashboard to aggregate, categorize, and de-duplicate transactions from statement screenshots and text.",
+  "requestFramePermissions": []
+}
