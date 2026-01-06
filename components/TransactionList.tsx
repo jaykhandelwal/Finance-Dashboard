@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Transaction, Category, SplitItem } from '../types';
-import { Search, Filter, ChevronLeft, ChevronRight, Edit2, X, Check, Hash, AlertTriangle, Trash2, CheckSquare, Square, Eye, EyeOff, HandCoins, User, Plus, Users, Calculator, PieChart } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, Edit2, X, Check, Hash, AlertTriangle, Trash2, CheckSquare, Square, Eye, EyeOff, HandCoins, Users, Calculator, PieChart, Plus } from 'lucide-react';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -17,6 +17,15 @@ interface SplitParticipant {
   amount: number; // For exact mode
   isSelected: boolean; // For equal mode
   shares: number; // For shares mode
+}
+
+// Separate interface for the form to handle raw strings during input
+interface EditFormData {
+  date: string;
+  amount: string;
+  enhancedDescription: string;
+  category: string;
+  tags: string;
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({ 
@@ -38,6 +47,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   
   // Modals State
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
+  const [editForm, setEditForm] = useState<EditFormData | null>(null);
   const [lendingTx, setLendingTx] = useState<Transaction | null>(null);
   
   // Lending Form State
@@ -71,12 +81,36 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     return categories.find(c => c.name === catName)?.color || '#94a3b8';
   };
 
+  const handleStartEdit = (t: Transaction) => {
+    setEditingTx(t);
+    setEditForm({
+        date: t.date,
+        amount: t.amount.toString(),
+        enhancedDescription: t.enhancedDescription,
+        category: t.category,
+        tags: t.tags ? t.tags.join(', ') : ''
+    });
+  };
+
   const handleEditSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingTx && onUpdateTransaction) {
+    if (editingTx && editForm && onUpdateTransaction) {
       // If manually edited, we assume it's now verified and reviewed
-      onUpdateTransaction({ ...editingTx, status: 'verified', confidence: 100, isReviewed: true });
+      const updatedTx: Transaction = {
+          ...editingTx,
+          date: editForm.date,
+          amount: parseFloat(editForm.amount) || 0,
+          enhancedDescription: editForm.enhancedDescription,
+          category: editForm.category,
+          tags: editForm.tags.split(',').map(s => s.trim()).filter(Boolean),
+          status: 'verified',
+          confidence: 100,
+          isReviewed: true
+      };
+      
+      onUpdateTransaction(updatedTx);
       setEditingTx(null);
+      setEditForm(null);
     }
   };
 
@@ -505,7 +539,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                            {t.isReviewed ? <Eye size={16} /> : <Check size={16} />}
                          </button>
                          <button 
-                          onClick={() => setEditingTx(t)}
+                          onClick={() => handleStartEdit(t)}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           title="Edit Transaction"
                          >
@@ -544,13 +578,13 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       </div>
 
       {/* Edit Modal */}
-      {editingTx && (
+      {editingTx && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 transform transition-all">
             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
               <h3 className="text-xl font-bold text-slate-800">Edit Transaction</h3>
               <button 
-                onClick={() => setEditingTx(null)}
+                onClick={() => { setEditingTx(null); setEditForm(null); }}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
               >
                 <X size={20} />
@@ -563,8 +597,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   <label className="text-sm font-bold text-slate-600">Date</label>
                   <input 
                     type="date" 
-                    value={editingTx.date}
-                    onChange={(e) => setEditingTx({...editingTx, date: e.target.value})}
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
                     className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm font-medium"
                     required
                   />
@@ -576,8 +610,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                     <input 
                         type="number" 
                         step="0.01"
-                        value={editingTx.amount}
-                        onChange={(e) => setEditingTx({...editingTx, amount: parseFloat(e.target.value)})}
+                        value={editForm.amount}
+                        onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
                         className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm font-bold"
                         required
                     />
@@ -589,8 +623,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 <label className="text-sm font-bold text-slate-600">Description</label>
                 <input 
                   type="text" 
-                  value={editingTx.enhancedDescription}
-                  onChange={(e) => setEditingTx({...editingTx, enhancedDescription: e.target.value})}
+                  value={editForm.enhancedDescription}
+                  onChange={(e) => setEditForm({...editForm, enhancedDescription: e.target.value})}
                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm font-medium"
                   required
                 />
@@ -600,8 +634,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 <label className="text-sm font-bold text-slate-600">Category</label>
                 <div className="relative">
                     <select 
-                    value={editingTx.category}
-                    onChange={(e) => setEditingTx({...editingTx, category: e.target.value})}
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({...editForm, category: e.target.value})}
                     className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm appearance-none cursor-pointer font-medium"
                     >
                     {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -616,8 +650,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 <label className="text-sm font-bold text-slate-600">Tags (comma separated)</label>
                 <input 
                   type="text" 
-                  value={editingTx.tags?.join(', ') || ''}
-                  onChange={(e) => setEditingTx({...editingTx, tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
+                  value={editForm.tags}
+                  onChange={(e) => setEditForm({...editForm, tags: e.target.value})}
                   placeholder="e.g. coffee, starbucks, weekend"
                   className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm placeholder-slate-400 font-medium"
                 />
@@ -626,7 +660,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               <div className="pt-6 flex justify-end gap-3 border-t border-slate-50">
                 <button 
                   type="button"
-                  onClick={() => setEditingTx(null)}
+                  onClick={() => { setEditingTx(null); setEditForm(null); }}
                   className="px-5 py-2.5 text-slate-500 hover:bg-slate-50 rounded-xl font-bold transition-colors"
                 >
                   Cancel
