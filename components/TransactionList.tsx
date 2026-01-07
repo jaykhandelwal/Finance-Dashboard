@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Transaction, Category, SplitItem } from '../types';
-import { Search, Filter, ChevronLeft, ChevronRight, Edit2, X, Check, Hash, AlertTriangle, Trash2, CheckSquare, Square, Eye, EyeOff, HandCoins, Users, Calculator, PieChart, Plus } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, Edit2, X, Check, Hash, AlertTriangle, Trash2, CheckSquare, Square, Eye, EyeOff, HandCoins, User, Plus, Users, Calculator, PieChart } from 'lucide-react';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -17,15 +17,6 @@ interface SplitParticipant {
   amount: number; // For exact mode
   isSelected: boolean; // For equal mode
   shares: number; // For shares mode
-}
-
-// Separate interface for the form to handle raw strings during input
-interface EditFormData {
-  date: string;
-  amount: string;
-  enhancedDescription: string;
-  category: string;
-  tags: string;
 }
 
 export const TransactionList: React.FC<TransactionListProps> = ({ 
@@ -47,7 +38,6 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   
   // Modals State
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
-  const [editForm, setEditForm] = useState<EditFormData | null>(null);
   const [lendingTx, setLendingTx] = useState<Transaction | null>(null);
   
   // Lending Form State
@@ -81,36 +71,12 @@ export const TransactionList: React.FC<TransactionListProps> = ({
     return categories.find(c => c.name === catName)?.color || '#94a3b8';
   };
 
-  const handleStartEdit = (t: Transaction) => {
-    setEditingTx(t);
-    setEditForm({
-        date: t.date,
-        amount: t.amount.toString(),
-        enhancedDescription: t.enhancedDescription,
-        category: t.category,
-        tags: t.tags ? t.tags.join(', ') : ''
-    });
-  };
-
   const handleEditSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingTx && editForm && onUpdateTransaction) {
+    if (editingTx && onUpdateTransaction) {
       // If manually edited, we assume it's now verified and reviewed
-      const updatedTx: Transaction = {
-          ...editingTx,
-          date: editForm.date,
-          amount: parseFloat(editForm.amount) || 0,
-          enhancedDescription: editForm.enhancedDescription,
-          category: editForm.category,
-          tags: editForm.tags.split(',').map(s => s.trim()).filter(Boolean),
-          status: 'verified',
-          confidence: 100,
-          isReviewed: true
-      };
-      
-      onUpdateTransaction(updatedTx);
+      onUpdateTransaction({ ...editingTx, status: 'verified', confidence: 100, isReviewed: true });
       setEditingTx(null);
-      setEditForm(null);
     }
   };
 
@@ -343,39 +309,39 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
   return (
     <>
-      <div className="bg-white rounded-3xl shadow-lg shadow-slate-200/50 border border-slate-100 flex flex-col h-full overflow-hidden">
+      <div className="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 flex flex-col h-full overflow-hidden">
         {/* Bulk Action Header (Conditional) */}
         {selectedIds.size > 0 ? (
-          <div className="p-4 bg-indigo-50 border-b border-indigo-100 text-indigo-900 flex items-center justify-between animate-fade-in">
+          <div className="p-4 bg-indigo-600 text-white flex items-center justify-between animate-fade-in">
              <div className="flex items-center gap-4">
-               <span className="font-bold">{selectedIds.size} selected</span>
-               <div className="h-4 w-px bg-indigo-200"></div>
-               <button onClick={() => setSelectedIds(new Set())} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Deselect All</button>
+               <span className="font-semibold">{selectedIds.size} selected</span>
+               <div className="h-4 w-px bg-indigo-400"></div>
+               <button onClick={() => setSelectedIds(new Set())} className="text-sm text-indigo-100 hover:text-white">Deselect All</button>
              </div>
              <div className="flex items-center gap-3">
                <button 
                  onClick={() => executeBulkReview(true)}
-                 className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 shadow-sm rounded-lg flex items-center gap-2 text-sm font-bold hover:bg-indigo-50 transition-colors"
+                 className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-400 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
                >
                  <Eye size={16} /> Mark Reviewed
                </button>
                <button 
                  onClick={() => executeBulkReview(false)}
-                 className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 shadow-sm rounded-lg flex items-center gap-2 text-sm font-bold hover:bg-indigo-50 transition-colors"
+                 className="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-400 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors"
                >
                  <EyeOff size={16} /> Mark Unreviewed
                </button>
                <button 
                  onClick={executeBulkDelete}
-                 className="px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-600 shadow-sm rounded-lg flex items-center gap-2 text-sm font-bold hover:bg-rose-100 transition-colors ml-2"
+                 className="px-3 py-1.5 bg-rose-500 hover:bg-rose-400 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors ml-2"
                >
                  <Trash2 size={16} /> Delete
                </button>
              </div>
           </div>
         ) : (
-          <div className="p-6 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <h2 className="text-xl font-bold text-slate-800">Transactions</h2>
+          <div className="p-6 border-b border-slate-800 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+            <h2 className="text-xl font-bold text-white">Transactions</h2>
             
             <div className="flex flex-col md:flex-row gap-2">
               <div className="relative flex-1 md:flex-none">
@@ -385,7 +351,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   placeholder="Search description or tags..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 placeholder-slate-400 font-medium"
+                  className="pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full md:w-64 placeholder-slate-500"
                 />
               </div>
               
@@ -394,7 +360,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   <select 
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer font-medium"
+                    className="pl-4 pr-8 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                   >
                     <option value="All">All Categories</option>
                     {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -406,7 +372,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   <select 
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="pl-4 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer font-medium"
+                    className="pl-4 pr-8 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none cursor-pointer"
                   >
                     <option value="All">All Status</option>
                     <option value="Unreviewed">To Review</option>
@@ -424,30 +390,28 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         {/* Table */}
         <div className="overflow-x-auto flex-1">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-slate-50/80 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-100 sticky top-0 z-10 backdrop-blur-sm">
+            <thead className="bg-slate-800/50 text-slate-400 text-xs font-semibold uppercase tracking-wider border-b border-slate-800 sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-4 w-12 text-center">
-                  <button onClick={toggleAll} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                <th className="px-4 py-4 w-12 text-center">
+                  <button onClick={toggleAll} className="text-slate-500 hover:text-indigo-400">
                     {selectedIds.size > 0 && selectedIds.size === displayed.length ? <CheckSquare size={18} /> : <Square size={18} />}
                   </button>
                 </th>
-                <th className="px-6 py-4 w-32">Date</th>
-                <th className="px-6 py-4">Description</th>
-                <th className="px-6 py-4 w-40">Category</th>
-                <th className="px-6 py-4 w-48">Source</th>
-                <th className="px-6 py-4 text-right w-32">Amount</th>
-                <th className="px-6 py-4 text-center w-28">Actions</th>
+                <th className="px-4 py-4 w-32">Date</th>
+                <th className="px-4 py-4">Description</th>
+                <th className="px-4 py-4 w-40">Category</th>
+                <th className="px-4 py-4 w-48">Source</th>
+                <th className="px-4 py-4 text-right w-32">Amount</th>
+                <th className="px-4 py-4 text-center w-28">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-slate-800 bg-slate-900">
               {displayed.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center text-slate-400">
-                    <div className="flex flex-col items-center gap-3">
-                       <div className="p-4 bg-slate-50 rounded-full">
-                         <Search size={24} className="opacity-40" />
-                       </div>
-                       <p className="font-medium">No transactions found matching your filters.</p>
+                  <td colSpan={7} className="px-6 py-16 text-center text-slate-500">
+                    <div className="flex flex-col items-center gap-2">
+                       <Search size={24} className="opacity-20" />
+                       <p>No transactions found matching your filters.</p>
                     </div>
                   </td>
                 </tr>
@@ -456,49 +420,49 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                   <tr 
                     key={t.id} 
                     className={`
-                      group transition-colors
-                      ${selectedIds.has(t.id) ? 'bg-indigo-50/60' : 'hover:bg-slate-50'}
+                      group transition-colors text-slate-300
+                      ${selectedIds.has(t.id) ? 'bg-indigo-900/20' : 'hover:bg-slate-800/50'}
                     `}
                   >
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-4 text-center">
                       <button 
                         onClick={() => toggleSelection(t.id)}
-                        className={`${selectedIds.has(t.id) ? 'text-indigo-600' : 'text-slate-300 hover:text-indigo-400'}`}
+                        className={`${selectedIds.has(t.id) ? 'text-indigo-400' : 'text-slate-600 hover:text-indigo-400'}`}
                       >
                         {selectedIds.has(t.id) ? <CheckSquare size={18} /> : <Square size={18} />}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-sm whitespace-nowrap font-medium">
+                    <td className="px-4 py-4 text-sm whitespace-nowrap font-medium">
                       <div className="flex items-center gap-2">
                         {!t.isReviewed && (
-                          <div className="w-2 h-2 bg-indigo-500 rounded-full shrink-0 shadow-sm shadow-indigo-200" title="Unreviewed transaction"></div>
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full shrink-0" title="Unreviewed transaction"></div>
                         )}
-                        <span className={!t.isReviewed ? "text-slate-900 font-bold" : "text-slate-500"}>
+                        <span className={!t.isReviewed ? "text-white font-semibold" : "text-slate-400"}>
                           {t.date}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2">
-                           <span className="font-bold text-slate-800">{t.enhancedDescription}</span>
+                           <span className="font-semibold text-white">{t.enhancedDescription}</span>
                            {t.status === 'needs_review' && (
-                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200" title="Low confidence prediction">
+                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Low confidence prediction">
                                <AlertTriangle size={10} className="mr-1" /> Check
                              </span>
                            )}
                            {t.splitDetails && t.splitDetails.items.length > 0 && (
-                             <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border bg-indigo-50 text-indigo-700 border-indigo-200`} title="Split transaction">
+                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border bg-indigo-500/10 text-indigo-400 border-indigo-500/20`} title="Split transaction">
                                <HandCoins size={10} className="mr-1" /> 
                                {t.splitDetails.items.length === 1 ? t.splitDetails.items[0].name : `${t.splitDetails.items.length} People`}
                              </span>
                            )}
                         </div>
-                        <span className="text-xs text-slate-400 truncate max-w-[200px] font-medium">{t.originalDescription}</span>
+                        <span className="text-xs text-slate-500 truncate max-w-[200px]">{t.originalDescription}</span>
                         {t.tags && t.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {t.tags.map((tag, i) => (
-                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">
+                              <span key={i} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400">
                                 <Hash size={8} className="mr-0.5 opacity-50" /> {tag}
                               </span>
                             ))}
@@ -506,41 +470,40 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4">
                       <span 
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                         style={{ 
-                          backgroundColor: `${getCategoryColor(t.category)}15`, 
-                          color: getCategoryColor(t.category),
-                          border: `1px solid ${getCategoryColor(t.category)}30`
+                          backgroundColor: `${getCategoryColor(t.category)}20`, 
+                          color: getCategoryColor(t.category) 
                         }}
                       >
                         {t.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-500 font-medium">{t.source}</td>
-                    <td className={`px-6 py-4 text-right font-bold text-sm ${t.isExpense ? 'text-slate-800' : 'text-emerald-600'}`}>
+                    <td className="px-4 py-4 text-sm text-slate-500">{t.source}</td>
+                    <td className={`px-4 py-4 text-right font-bold text-sm ${t.isExpense ? 'text-slate-200' : 'text-emerald-400'}`}>
                       {t.isExpense ? '-' : '+'}{formatCurrency(t.amount)}
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-4 text-center">
                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                          <button 
                            onClick={() => openLendModal(t)}
-                           className={`p-2 rounded-lg transition-colors ${t.splitDetails ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                           className={`p-1.5 rounded-md transition-colors ${t.splitDetails ? 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20' : 'text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10'}`}
                            title="Lend / Split"
                          >
                            <HandCoins size={16} />
                          </button>
                          <button 
                            onClick={() => onBulkReview && onBulkReview([t.id], !t.isReviewed)}
-                           className={`p-2 rounded-lg transition-colors ${t.isReviewed ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                           className={`p-1.5 rounded-md transition-colors ${t.isReviewed ? 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20' : 'text-slate-500 hover:text-indigo-400 hover:bg-slate-800'}`}
                            title={t.isReviewed ? "Mark as Unreviewed" : "Mark as Reviewed"}
                          >
                            {t.isReviewed ? <Eye size={16} /> : <Check size={16} />}
                          </button>
                          <button 
-                          onClick={() => handleStartEdit(t)}
-                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          onClick={() => setEditingTx(t)}
+                          className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-md transition-colors"
                           title="Edit Transaction"
                          >
                            <Edit2 size={16} />
@@ -555,21 +518,21 @@ export const TransactionList: React.FC<TransactionListProps> = ({
         </div>
 
         {/* Pagination */}
-        <div className="p-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500 bg-white">
-          <span className="font-medium">Showing {Math.min(filtered.length, (page - 1) * itemsPerPage + 1)} to {Math.min(filtered.length, page * itemsPerPage)} of {filtered.length} entries</span>
+        <div className="p-4 border-t border-slate-800 flex items-center justify-between text-sm text-slate-500 bg-slate-900">
+          <span>Showing {Math.min(filtered.length, (page - 1) * itemsPerPage + 1)} to {Math.min(filtered.length, page * itemsPerPage)} of {filtered.length} entries</span>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-slate-600"
+              className="p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-slate-400"
             >
               <ChevronLeft size={16} />
             </button>
-            <span className="font-medium text-slate-700">Page {page} of {totalPages || 1}</span>
+            <span>Page {page} of {totalPages || 1}</span>
             <button 
                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                disabled={page === totalPages || totalPages === 0}
-               className="p-2 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-slate-600"
+               className="p-2 rounded-lg hover:bg-slate-800 border border-transparent hover:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-slate-400"
             >
               <ChevronRight size={16} />
             </button>
@@ -578,96 +541,88 @@ export const TransactionList: React.FC<TransactionListProps> = ({
       </div>
 
       {/* Edit Modal */}
-      {editingTx && editForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 transform transition-all">
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-white">
-              <h3 className="text-xl font-bold text-slate-800">Edit Transaction</h3>
+      {editingTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-800">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Edit Transaction</h3>
               <button 
-                onClick={() => { setEditingTx(null); setEditForm(null); }}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
+                onClick={() => setEditingTx(null)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
             
-            <form onSubmit={handleEditSave} className="p-8 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600">Date</label>
+            <form onSubmit={handleEditSave} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-400">Date</label>
                   <input 
                     type="date" 
-                    value={editForm.date}
-                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm font-medium"
+                    value={editingTx.date}
+                    onChange={(e) => setEditingTx({...editingTx, date: e.target.value})}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600">Amount</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                    <input 
-                        type="number" 
-                        step="0.01"
-                        value={editForm.amount}
-                        onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
-                        className="w-full pl-8 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm font-bold"
-                        required
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-slate-400">Amount</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={editingTx.amount}
+                    onChange={(e) => setEditingTx({...editingTx, amount: parseFloat(e.target.value)})}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                    required
+                  />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Description</label>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-400">Description</label>
                 <input 
                   type="text" 
-                  value={editForm.enhancedDescription}
-                  onChange={(e) => setEditForm({...editForm, enhancedDescription: e.target.value})}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm font-medium"
+                  value={editingTx.enhancedDescription}
+                  onChange={(e) => setEditingTx({...editingTx, enhancedDescription: e.target.value})}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Category</label>
-                <div className="relative">
-                    <select 
-                    value={editForm.category}
-                    onChange={(e) => setEditForm({...editForm, category: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm appearance-none cursor-pointer font-medium"
-                    >
-                    {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                    </div>
-                </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-400">Category</label>
+                <select 
+                  value={editingTx.category}
+                  onChange={(e) => setEditingTx({...editingTx, category: e.target.value})}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white"
+                >
+                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-600">Tags (comma separated)</label>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-400">Tags (comma separated)</label>
                 <input 
                   type="text" 
-                  value={editForm.tags}
-                  onChange={(e) => setEditForm({...editForm, tags: e.target.value})}
+                  value={editingTx.tags?.join(', ') || ''}
+                  onChange={(e) => setEditingTx({...editingTx, tags: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})}
                   placeholder="e.g. coffee, starbucks, weekend"
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-sm placeholder-slate-400 font-medium"
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-slate-600"
                 />
               </div>
 
-              <div className="pt-6 flex justify-end gap-3 border-t border-slate-50">
+              <div className="pt-4 flex justify-end gap-3">
                 <button 
                   type="button"
-                  onClick={() => { setEditingTx(null); setEditForm(null); }}
-                  className="px-5 py-2.5 text-slate-500 hover:bg-slate-50 rounded-xl font-bold transition-colors"
+                  onClick={() => setEditingTx(null)}
+                  className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 transform hover:-translate-y-0.5"
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-900/50 flex items-center gap-2"
                 >
                   <Check size={18} />
                   Save Changes
@@ -680,46 +635,46 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
       {/* Lend / Split Modal */}
       {lendingTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] border border-slate-100">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
-              <h3 className="text-xl font-bold text-slate-800">Split Transaction</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh] border border-slate-800">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+              <h3 className="text-lg font-bold text-white">Split Transaction</h3>
               <button 
                 onClick={() => setLendingTx(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
             
             <div className="p-6 space-y-6 overflow-y-auto">
-              <div className="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 flex items-center justify-between">
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-indigo-900">{lendingTx.enhancedDescription}</p>
-                    <p className="text-xs font-semibold text-indigo-600/70 uppercase tracking-wide mt-1">Total Bill</p>
+                    <p className="font-semibold text-white">{lendingTx.enhancedDescription}</p>
+                    <p className="text-sm text-slate-500">Total Bill</p>
                   </div>
-                  <p className="text-2xl font-extrabold text-indigo-700">
+                  <p className="text-xl font-bold text-white">
                     {formatCurrency(lendingTx.amount)}
                   </p>
               </div>
 
               {/* Split Mode Toggle */}
-              <div className="flex bg-slate-100 p-1.5 rounded-xl">
+              <div className="flex bg-slate-800 p-1 rounded-lg">
                   <button 
                     onClick={() => setSplitMode('equal')}
-                    className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${splitMode === 'equal' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-2 px-1 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${splitMode === 'equal' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
                   >
                     <Users size={16} /> Equally
                   </button>
                   <button 
                     onClick={() => setSplitMode('shares')}
-                    className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${splitMode === 'shares' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-2 px-1 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${splitMode === 'shares' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
                   >
                     <PieChart size={16} /> Shares
                   </button>
                   <button 
                     onClick={() => setSplitMode('exact')}
-                    className={`flex-1 py-2 px-1 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${splitMode === 'exact' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    className={`flex-1 py-2 px-1 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${splitMode === 'exact' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'}`}
                   >
                     <Calculator size={16} /> Exact
                   </button>
@@ -727,19 +682,19 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 
               {/* Add People */}
               <div className="space-y-2">
-                 <label className="text-sm font-bold text-slate-600">Who is involved?</label>
+                 <label className="text-sm font-medium text-slate-400">Who is involved?</label>
                  <div className="flex gap-2">
                     <input 
                       type="text" 
                       placeholder="Add person by name..." 
-                      className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-slate-800 placeholder-slate-400 font-medium shadow-sm"
+                      className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm text-white placeholder-slate-600"
                       value={newPersonName}
                       onChange={(e) => setNewPersonName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addParticipant())}
                     />
                     <button 
                       onClick={addParticipant}
-                      className="px-3.5 py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl hover:bg-indigo-100 transition-colors shadow-sm"
+                      className="px-3 py-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/20 transition-colors"
                     >
                       <Plus size={20} />
                     </button>
@@ -749,48 +704,48 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               {/* List of People */}
               <div className="space-y-3">
                  {participants.map(p => (
-                   <div key={p.id} className="flex items-center justify-between group p-2 hover:bg-slate-50 rounded-xl transition-colors -mx-2">
+                   <div key={p.id} className="flex items-center justify-between group">
                       <div className="flex items-center gap-3">
                         {p.id !== 'user' && (
-                            <button onClick={() => removeParticipant(p.id)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                            <button onClick={() => removeParticipant(p.id)} className="text-slate-500 hover:text-rose-500">
                                 <Trash2 size={16} />
                             </button>
                         )}
-                        <div className="flex items-center gap-3">
-                           <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${p.id === 'user' ? 'bg-indigo-100 text-indigo-600' : 'bg-white border border-slate-200 text-slate-500'}`}>
+                        <div className="flex items-center gap-2">
+                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${p.id === 'user' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
                               {p.name.charAt(0).toUpperCase()}
                            </div>
-                           <span className={`font-bold ${p.id === 'user' ? 'text-slate-800' : 'text-slate-600'}`}>{p.name}</span>
+                           <span className={p.id === 'user' ? 'font-semibold text-white' : 'text-slate-300'}>{p.name}</span>
                         </div>
                       </div>
 
                       {splitMode === 'equal' && (
                         <div className="flex items-center gap-3">
                            {p.isSelected && (
-                               <span className="text-sm font-bold text-slate-700">
+                               <span className="text-sm font-medium text-slate-300">
                                  {formatCurrency(splitAmount)}
                                </span>
                            )}
                            <button 
                              onClick={() => toggleParticipantSelection(p.id)}
-                             className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all shadow-sm ${p.isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300'}`}
+                             className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${p.isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-slate-800 border-slate-600'}`}
                            >
-                             {p.isSelected && <Check size={14} strokeWidth={3} />}
+                             {p.isSelected && <Check size={12} />}
                            </button>
                         </div>
                       )}
 
                       {splitMode === 'shares' && (
                         <div className="flex items-center gap-3">
-                           <span className="text-sm font-bold text-slate-500 min-w-[60px] text-right">
+                           <span className="text-sm font-medium text-slate-400 min-w-[60px] text-right">
                              {formatCurrency((p.shares || 0) * shareUnitValue)}
                            </span>
-                           <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
-                              <span className="px-2 text-[10px] font-bold text-slate-400 border-r border-slate-100 bg-slate-50 h-full flex items-center uppercase">Share</span>
+                           <div className="flex items-center border border-slate-700 rounded-lg bg-slate-950 overflow-hidden">
+                              <span className="px-2 text-xs text-slate-500 border-r border-slate-800 bg-slate-900 h-full flex items-center">Share</span>
                               <input 
                                 type="number" 
                                 min="0"
-                                className="w-12 py-1.5 px-1 text-center focus:outline-none text-sm font-bold bg-transparent text-slate-800"
+                                className="w-12 py-1 px-1 text-center focus:outline-none text-sm font-medium bg-transparent text-white"
                                 value={p.shares}
                                 onChange={(e) => updateParticipantShares(p.id, parseInt(e.target.value) || 0)}
                               />
@@ -801,15 +756,15 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                       {splitMode === 'exact' && (
                         <div className="flex items-center gap-2">
                            {p.id === 'user' ? (
-                             <span className="text-sm font-bold text-slate-400 px-3 py-2">
+                             <span className="text-sm font-medium text-slate-400 px-3 py-2">
                                {formatCurrency(remainingExact)}
                              </span>
                            ) : (
-                             <div className="relative w-28">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
+                             <div className="relative w-24">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">$</span>
                                 <input 
                                   type="number" 
-                                  className="w-full pl-6 pr-3 py-1.5 text-right bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 placeholder-slate-300 font-bold shadow-sm"
+                                  className="w-full pl-5 pr-2 py-1.5 text-right bg-slate-950 border border-slate-700 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-slate-600"
                                   value={p.amount || ''}
                                   placeholder="0.00"
                                   onChange={(e) => updateParticipantAmount(p.id, parseFloat(e.target.value))}
@@ -824,25 +779,25 @@ export const TransactionList: React.FC<TransactionListProps> = ({
               
               {/* Summary */}
               {splitMode === 'exact' && remainingExact < 0 && (
-                 <div className="p-3 bg-rose-50 text-rose-600 text-sm font-medium rounded-xl flex items-start gap-2 border border-rose-100">
+                 <div className="p-3 bg-rose-500/10 text-rose-400 text-sm rounded-lg flex items-start gap-2 border border-rose-500/20">
                     <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                     <span>The amounts exceed the total bill by {formatCurrency(Math.abs(remainingExact))}.</span>
                  </div>
               )}
             </div>
 
-            <div className="p-6 border-t border-slate-100 flex justify-end gap-3 shrink-0 bg-white">
+            <div className="p-6 border-t border-slate-800 flex justify-end gap-3 shrink-0 bg-slate-900">
               <button 
                 type="button"
                 onClick={() => setLendingTx(null)}
-                className="px-5 py-2.5 text-slate-500 hover:bg-slate-50 rounded-xl font-bold transition-colors"
+                className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded-lg font-medium transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleLendSave}
                 disabled={splitMode === 'exact' && Math.abs(remainingExact) > 0.01 && remainingExact < 0}
-                className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center gap-2 disabled:opacity-50 disabled:shadow-none transform hover:-translate-y-0.5"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-900/50 flex items-center gap-2 disabled:opacity-50"
               >
                 <Check size={18} />
                 Save Split
